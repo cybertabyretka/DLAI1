@@ -76,7 +76,8 @@ def measure_times(func: Callable, tensors: list[torch.Tensor]) -> tuple[list, li
     return cpu_times, gpu_times
 
 
-# 3.3 Сравнение операций с группировкой по размерностям
+# 3.3 Сравнение операций
+print(f'{"-"*70}\n3.3 Сравнение операций\n{"-"*70}')
 result_times = {}
 for func_name in funcs:
     print(f"\nИзмерение для операции: {func_name}")
@@ -86,6 +87,7 @@ for func_name in funcs:
         shape_str = str(tensor.numel())
         op_results.append((shape_str, cpu_times[i], gpu_times[i]))
     result_times[func_name] = op_results
+print()
 print(f"{'Операция':<36} | {'Размер тензора':<20} | {'CPU (мс)':<12} | {'GPU (мс)':<12} | {'Ускорение':<12}")
 for func_name, results in result_times.items():
     for shape_str, cpu_time, gpu_time in results:
@@ -94,7 +96,7 @@ for func_name, results in result_times.items():
 
 
 # 3.4 Анализ результатов
-analysis = """
+"""
 Анализ результатов: 
 1. На GPU наибольшее ускорение получают следующие операции: Поэлементное умножение, 
 Поэлементное умножение, Вычисление суммы всех элементов. Это говорит о том, что эти операции очень хорошо 
