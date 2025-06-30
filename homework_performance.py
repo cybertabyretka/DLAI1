@@ -2,7 +2,6 @@ import torch
 import time
 from typing import Callable
 
-
 # 3.1 Подготовка данных
 tensors = [
     torch.rand(64, 1024, 1024),
@@ -64,29 +63,70 @@ def measure_times(func: Callable, tensors: list[torch.Tensor]) -> tuple[list, li
     gpu_times = []
     for tensor in tensors:
         cpu_time = measure_time_cpu(func, tensor)
-        print(f'[CPU] {tensor.shape}: {cpu_time}')
+        print(f'[CPU] {tensor.shape}: {cpu_time:.2f} мс')
         cpu_times.append(cpu_time)
         if torch.cuda.is_available():
             gpu_tensor = tensor.to('cuda')
             gpu_time = measure_time_gpu(func, gpu_tensor)
-            print(f'[GPU] {tensor.shape}: {gpu_time}')
+            print(f'[GPU] {tensor.shape}: {gpu_time:.2f} мс')
             gpu_times.append(gpu_time)
         else:
             print(f'[GPU] CUDA не найдена')
+            gpu_times.append(0.0)
     return cpu_times, gpu_times
 
 
-# 3.3 Сравнение операций
+# 3.3 Сравнение операций с группировкой по размерностям
 result_times = {}
 for func_name in funcs:
-    print(func_name)
+    print(f"\nИзмерение для операции: {func_name}")
     cpu_times, gpu_times = measure_times(funcs[func_name], tensors)
-    cpu_times_sum = sum(cpu_times)
-    gpu_times_sum = sum(gpu_times) if len(gpu_times) > 0 else 0
-    result_times[func_name] = (cpu_times_sum, gpu_times_sum)
-print(f'{"Операция":<36} | {"CPU сумм.(мс)":<18} | {"GPU сумм.(мс)":<18} | {"Ускорение":<18}')
-for func_name in result_times:
-    cpu_time = result_times[func_name][0]
-    gpu_time = result_times[func_name][1]
-    speedup = cpu_time / gpu_time if gpu_time > 0 else 0
-    print(f'{func_name:<36} | {cpu_time:<18.2f} | {gpu_time:<18.2f} | {speedup:<18.2f}')
+    op_results = []
+    for i, tensor in enumerate(tensors):
+        shape_str = str(tensor.numel())
+        op_results.append((shape_str, cpu_times[i], gpu_times[i]))
+    result_times[func_name] = op_results
+print(f"{'Операция':<36} | {'Размер тензора':<20} | {'CPU (мс)':<12} | {'GPU (мс)':<12} | {'Ускорение':<12}")
+for func_name, results in result_times.items():
+    for shape_str, cpu_time, gpu_time in results:
+        speedup = cpu_time / gpu_time if gpu_time > 0 else float('inf')
+        print(f"{func_name:<36} | {shape_str:<20} | {cpu_time:<12.2f} | {gpu_time:<12.2f} | {speedup:<12.2f}")
+
+
+# 3.4 Анализ результатов
+analysis = """
+Анализ результатов: 
+1. На GPU наибольшее ускорение получают следующие операции: Поэлементное умножение, 
+Поэлементное умножение, Вычисление суммы всех элементов. Это говорит о том, что эти операции очень хорошо 
+распараллеливаются.
+2. Таких операций, которые значительно ухудшили время не было. Но была операция с нулевым ускорением: Транспонирование.
+Эта операция требует практически полного переупорядочивания данных в памяти, поэтому накладные расходы GPU превышают 
+выгоду.
+3. Размер матриц по разному влияет на ускорение. При Матричном умножении и Поэлементном умножении ускорение обратно 
+попорционально размеру тензора. Это можно объяснить тем, что при малых размерах, накладные
+расходы GPU не дают получить значительную выгоду и только при увеличении размерности тензоров накладные расходы 
+начинают играть меньшую роль.
+4. При передаче данных между CPU и GPU происходит:
+    4.1. Инициализация передачи данных
+        4.1.1. CPU подготавливает данные в оперативной памяти (RAM).
+        4.1.2. GPU имеет свою собственную память (VRAM), и данные должны быть скопированы туда для обработки.
+    4.2. Дискретные GPU (NVIDIA, AMD) подключаются через Через шину PCI Express.
+         Скорость передачи зависит от версии PCIe:
+            PCIe 3.0 x16: ~16 ГБ/с
+            PCIe 4.0 x16: ~32 ГБ/с
+            PCIe 5.0 x16: ~64 ГБ/с
+         Данные копируются из RAM → VRAM через DMA (прямой доступ к памяти).
+    4.3. Роль драйверов и API
+         Драйвер GPU управляет передачей данных.
+         API (CUDA, OpenCL, Vulkan, DirectX) предоставляют функции для:
+            Выделения памяти на GPU (cudaMalloc, clCreateBuffer).
+            Копирования данных (cudaMemcpy, clEnqueueWriteBuffer).
+            Синхронизации между CPU и GPU.
+    4.4. Задержки и оптимизации
+         Латентность: Передача через PCIe добавляет задержку (~микросекунды).
+         Оптимизации:
+            Пакетная передача (меньше вызовов API)
+            Асинхронные копии (передача данных параллельно с вычислениями)
+            Совместная память
+            Сжатие данных
+"""
