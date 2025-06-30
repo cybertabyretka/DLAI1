@@ -19,7 +19,7 @@ funcs = {
 
 
 # 3.2 Функция измерения времени
-def measure_time_cpu(func, *args, **kwargs) -> float:
+def measure_time_cpu(func: Callable, *args, **kwargs) -> float:
     """
     Вычисляет время выполнения функции на CPU.
     :param func: Функция, время выполнения которой нужно узнать
@@ -32,7 +32,7 @@ def measure_time_cpu(func, *args, **kwargs) -> float:
     return cpu_time
 
 
-def measure_time_gpu(func, *args, **kwargs) -> float:
+def measure_time_gpu(func: Callable, *args, **kwargs) -> float:
     """
     Вычисляет время выполнения функции на GPU.
     :param func: Функция, время выполнения которой нужно узнать

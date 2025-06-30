@@ -36,6 +36,15 @@ def mse(x: torch.Tensor, w: torch.Tensor, b: torch.Tensor, y_true: torch.Tensor)
     :param y_true: Тензор истинных значений
     :return: MSE
     """
+    if not isinstance(x, torch.Tensor):
+        raise TypeError(f'x должен быть torch.Tensor, получен {type(x)}')
+    if not isinstance(w, torch.Tensor):
+        raise TypeError(f'w должен быть torch.Tensor, получен {type(w)}')
+    if not isinstance(b, torch.Tensor):
+        raise TypeError(f'b должен быть torch.Tensor, получен {type(b)}')
+    if not isinstance(y_true, torch.Tensor):
+        raise TypeError(f'y_true должен быть torch.Tensor, получен {type(y_true)}')
+
     if x.shape != y_true.shape:
         raise ValueError(
             f'Размерности тензоров x и y_true не совпадают: x: {x.shape} vs y_true: {y_true.shape}'
@@ -44,6 +53,7 @@ def mse(x: torch.Tensor, w: torch.Tensor, b: torch.Tensor, y_true: torch.Tensor)
         raise AttributeError(
             f'У переменных w и b параметр requires_grad должен быть True. w: {w.requires_grad}, b: {b.requires_grad}'
         )
+
     if w.grad is not None:
         w.grad.zero_()
     if b.grad is not None:
@@ -73,6 +83,8 @@ try:
 except ValueError as e:
     print(f'При вычислении mse произошла ошибка: {e}')
 except AttributeError as e:
+    print(f'При вычислении mse произошла ошибка: {e}')
+except TypeError as e:
     print(f'При вычислении mse произошла ошибка: {e}')
 
 

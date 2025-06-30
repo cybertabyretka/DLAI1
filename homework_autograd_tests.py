@@ -55,6 +55,31 @@ def test_mse_requires_grad_false() -> None:
         mse(x, w, b, y_true)
 
 
+def test_mse_invalid_input_types() -> None:
+    """
+    Проверка вызова исключения при неверных типах входных данных
+    :return: None
+    """
+    x = torch.tensor([1.0, 2.0, 3.0])
+    w = torch.tensor(1.0, requires_grad=True)
+    b = torch.tensor(0.0, requires_grad=True)
+    y_true = torch.tensor([1.1, 2.1, 3.1])
+
+    with pytest.raises(TypeError):
+        mse([1.0, 2.0, 3.0], w, b, y_true)
+    with pytest.raises(TypeError):
+        mse(x, 1.0, b, y_true)
+    with pytest.raises(TypeError):
+        mse(x, w, 0.0, y_true)
+    with pytest.raises(TypeError):
+        mse(x, w, b, [1.1, 2.1, 3.1])
+
+    try:
+        mse(x, w, b, y_true)
+    except TypeError:
+        pytest.fail("Функция mse не должна вызывать TypeError при корректных типах")
+
+
 def test_mse_zero_error() -> None:
     """
     Проверка случая, когда предсказания совпадают с истинными значениями (ошибка = 0).
