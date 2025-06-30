@@ -40,15 +40,25 @@ def mse(x: torch.Tensor, w: torch.Tensor, b: torch.Tensor, y_true: torch.Tensor)
         raise ValueError(
             f'Размерности тензоров x и y_true не совпадают: x: {x.shape} vs y_true: {y_true.shape}'
         )
-    if not w.requires_grad and not b.requires_grad:
+    if not w.requires_grad or not b.requires_grad:
         raise AttributeError(
             f'У переменных w и b параметр requires_grad должен быть True. w: {w.requires_grad}, b: {b.requires_grad}'
         )
+    if w.grad is not None:
+        w.grad.zero_()
+    if b.grad is not None:
+        b.grad.zero_()
     y_pred = w * x + b
-    error = torch.mean((y_pred - y_true)**2)
+    error = torch.mean((y_pred - y_true) ** 2)
     error.backward()
-    print(f'Градиент w:\n{w.grad.item()}')
-    print(f'Градиент b:\n{b.grad.item()}')
+    if w.dim() == 0:
+        print(f'Градиент w:\n{w.grad.item()}')
+    else:
+        print(f'Градиент w:\n{w.grad}')
+    if b.dim() == 0:
+        print(f'Градиент b:\n{b.grad.item()}')
+    else:
+        print(f'Градиент b:\n{b.grad}')
     return error
 
 
